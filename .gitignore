@@ -1,0 +1,11 @@
+.env
+*.db
+token.json
+credentials.json
+credentials.json.json
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+scheduler_jobs.db
+meetingpulse.db
