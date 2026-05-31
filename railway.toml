@@ -3,5 +3,4 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "python server.py"
-healthcheckPath = "/health"
 restartPolicyType = "always"
