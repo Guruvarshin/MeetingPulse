@@ -21,7 +21,11 @@ TOKEN_FILE = BASE_DIR / "token.json"
 def _get_calendar_service():
     creds = None
 
-    if TOKEN_FILE.exists():
+    token_json_env = os.environ.get("GOOGLE_TOKEN_JSON")
+    if token_json_env:
+        import json
+        creds = Credentials.from_authorized_user_info(json.loads(token_json_env), SCOPES)
+    elif TOKEN_FILE.exists():
         creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
 
     if not creds or not creds.valid:
@@ -31,7 +35,7 @@ def _get_calendar_service():
             if not CREDENTIALS_FILE.exists():
                 raise FileNotFoundError(
                     f"credentials.json not found at {CREDENTIALS_FILE}.\n"
-                    "Follow the setup instructions at the top of calendar_tool.py."
+                    "Set GOOGLE_TOKEN_JSON env variable on Railway or provide credentials.json locally."
                 )
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(CREDENTIALS_FILE),
@@ -39,7 +43,8 @@ def _get_calendar_service():
             )
             creds = flow.run_local_server(port=0)
 
-        TOKEN_FILE.write_text(creds.to_json())
+        if not token_json_env:
+            TOKEN_FILE.write_text(creds.to_json())
 
     return build("calendar", "v3", credentials=creds)
 
