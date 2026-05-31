@@ -66,7 +66,7 @@ MeetingPulse/
 ### 1. Clone and install dependencies
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/meetingpulse.git
+git clone https://github.com/Guruvarshin/MeetingPulse.git
 cd meetingpulse/meetingpulse
 python -m venv .venv
 .venv\Scripts\activate        # Windows
