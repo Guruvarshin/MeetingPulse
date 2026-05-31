@@ -1,42 +1,76 @@
-import smtplib
 import os
+import json
+import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from pathlib import Path
+
 from dotenv import load_dotenv
 from fastmcp import FastMCP
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 load_dotenv()
 
 mcp = FastMCP("emailer")
 
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/gmail.send",
+]
+
+BASE_DIR = Path(__file__).parent.parent
+CREDENTIALS_FILE = BASE_DIR / "credentials.json"
+TOKEN_FILE = BASE_DIR / "token.json"
+
 GMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+
+
+def _get_gmail_service():
+    creds = None
+
+    token_json_env = os.environ.get("GOOGLE_TOKEN_JSON")
+    if token_json_env:
+        creds = Credentials.from_authorized_user_info(json.loads(token_json_env), SCOPES)
+    elif TOKEN_FILE.exists():
+        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            if not CREDENTIALS_FILE.exists():
+                raise FileNotFoundError(
+                    f"credentials.json not found at {CREDENTIALS_FILE}.\n"
+                    "Set GOOGLE_TOKEN_JSON env variable on Railway or provide credentials.json locally."
+                )
+            flow = InstalledAppFlow.from_client_secrets_file(
+                str(CREDENTIALS_FILE),
+                SCOPES,
+            )
+            creds = flow.run_local_server(port=0)
+
+        if not token_json_env:
+            TOKEN_FILE.write_text(creds.to_json())
+
+    return build("gmail", "v1", credentials=creds)
 
 
 def _send(to_email: str, subject: str, body: str) -> None:
-    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
-        raise EnvironmentError(
-            "GMAIL_ADDRESS and GMAIL_APP_PASSWORD must be set in the .env file. "
-            "Generate an App Password at https://myaccount.google.com/apppasswords"
-        )
+    sender = GMAIL_ADDRESS or "me"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = GMAIL_ADDRESS
+    msg["From"] = sender
     msg["To"] = to_email
-
     msg.attach(MIMEText(body, "plain"))
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
-        server.sendmail(
-            GMAIL_ADDRESS,
-            to_email,
-            msg.as_string(),
-        )
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+    service = _get_gmail_service()
+    service.users().messages().send(userId="me", body={"raw": raw}).execute()
 
 
 @mcp.tool()
