@@ -1,14 +1,14 @@
 # MeetingPulse
 
-A remote MCP server that turns raw meeting notes into action items, follow-up emails, and Google Calendar reminders — all triggered through a single conversation with Claude.
+A remote MCP server that turns raw meeting notes into action items, follow-up emails, and Google Calendar reminders — all triggered programmatically through an MCP server.
 
-Deployed on Railway. Connects to Claude via the MCP streamable-HTTP transport.
+Deployed on Railway. Connects via the MCP streamable-HTTP transport.
 
 ---
 
 ## What it does
 
-Paste your meeting notes into Claude. MeetingPulse automatically:
+Paste your meeting notes into an MCP client. MeetingPulse automatically:
 
 1. **Extracts and logs** every action item into a SQLite tracker
 2. **Sends a follow-up email** to each owner via Gmail
@@ -17,7 +17,7 @@ Paste your meeting notes into Claude. MeetingPulse automatically:
 
 ---
 
-## Tools exposed to Claude
+## Tools exposed to MCP clients
 
 | Tool | What it does |
 |---|---|
@@ -137,9 +137,9 @@ Your server will be live at `https://meetingpulse-production.up.railway.app`.
 
 ---
 
-## Connecting to Claude Code
+## Connecting via MCP
 
-Add this to your Claude Code MCP config:
+Add this to your MCP client config:
 
 ```json
 {
@@ -156,7 +156,7 @@ Add this to your Claude Code MCP config:
 
 ## Example usage
 
-> "Here are my meeting notes from today's sprint planning: Arjun will finish the API integration by June 5. Meera will send the design mockups by June 3. Ravi needs to update the deployment docs — no deadline yet."
+> "Here are my meeting notes from today's sprint planning: Arjun will finish the API integration by June 5. Meera will send the design mockups by June 3. Ravi needs to update the deployment docs [...]
 
 MeetingPulse will:
 - Log 3 action items to the tracker
